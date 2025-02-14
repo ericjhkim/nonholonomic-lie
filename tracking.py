@@ -22,26 +22,26 @@ def main():
     PROBLEM = 0                                         # 0: Setpoint tracking, 1: Trajectory tracking
     SIM_TIME = 20                                       # Simulation time in seconds
     dt = 0.1                                            # Time step
-    SAVE_DATA = False                                    # Save data to file
-    CREATE_GIF = False                                   # Create GIF
+    SAVE_DATA = True                                    # Save data to file
+    CREATE_GIF = True                                   # Create GIF
 
     # Directories
     TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
     gif_path = f"visualizations/anim_{TIMESTAMP}.gif"
 
     #%% Initialization
-    k_p, k_d, k, k_e = 1.0, 2.0, 0.1, 1.0
+    k_p, k_d, k, k_e = 1.0, 4.0, 1.5, 1.0
 
     # Leader's configuration
     g0 = in_SE2([np.deg2rad(0.0), 0, 0])                # Initial pose
     xi0 = np.array([0.0, 0.0, 0.0])                     # Initial velocity
     def u_leader(t):
-        return np.array([0.15*np.cos(0.4*t), 10, 0])    # Dynamic leader control input
-        # return np.array([0.0, 0.0, 0.0])                # Leader's control input (static control)
+        # return np.array([0.15*np.cos(0.4*t), 10, 0])    # Dynamic leader control input
+        return np.array([0.0, 0.0, 0.0])                # Leader's control input (static control)
     
     # Follower's initial configuration
-    g1 = in_SE2([np.deg2rad(-90), -500, 500])           # Initial pose
-    xi1 = np.array([np.deg2rad(2.0), 10.0, 0.0])        # Initial velocity
+    g1 = in_SE2([np.deg2rad(1), 0, 20])           # Initial pose
+    xi1 = np.array([np.deg2rad(0.0), 0.0, 0.0])        # Initial velocity
 
     # Trajectory data storage
     states = {
@@ -72,10 +72,6 @@ def main():
         states[key] = np.array(states[key])
     
     gains = [k_p, k_d, k, k_e]
-    
-    # Save data
-    if SAVE_DATA:
-        tools.save_to_h5py(states, gains, filename=f"data/data_{TIMESTAMP}", dataset_name="simulation")
 
     # Generate gif frames
     if CREATE_GIF:
@@ -98,6 +94,10 @@ def main():
         # Clean up the frame images after the GIF is created
         import shutil
         shutil.rmtree('frames')
+    
+    # Save data
+    if SAVE_DATA:
+        tools.save_to_h5py(states, gains, filename=f"data/data_{TIMESTAMP}", dataset_name="simulation")
 
     plt.plot(states["0"][:,1], states["0"][:,2], 'b-', label='Leader', alpha=0.2)
     plt.plot(states["1"][:,1], states["1"][:,2], 'r-', label='Follower', alpha=0.2)

@@ -28,6 +28,8 @@ def generate_frames(states, dt):
     min_y, max_y = np.min([states[k][:, 2] for k in states.keys()]), np.max([states[k][:, 2] for k in states.keys()])
     size = 0.022*np.linalg.norm([max_x - min_x, max_y - min_y])  # Adjust line length as needed
 
+    lims = [[0.0, 0.0], [0.0, 0.0]]
+
     # Loop through time steps (1 frame per timestep)
     num_timesteps = len(states[[k for k in states.keys()][0]])
     for i in tqdm(range(num_timesteps), desc="Generating GIF Frames", unit="frame"):
@@ -91,6 +93,18 @@ def generate_frames(states, dt):
 
             # Assign handles for the legend
             hi[key] = ax.scatter([], [], c=colours[k], marker='s')
+
+        for l in range(2):
+            min_value = min(states[key][:, l+1])
+            max_value = max(states[key][:, l+1])
+            buffer = max_value*0.2
+            if min_value-buffer < lims[l][0]:
+                lims[l][0] = min_value-buffer
+            if max_value+buffer > lims[l][1]:
+                lims[l][1] = max_value+buffer
+
+        ax.set_xlim(lims[0])
+        ax.set_ylim(lims[1])
 
         handles.extend([hi[k] for k in hi.keys()])
         labels.extend(np.concatenate((["Leader"], [f"Follower {k+1}" for k in range(len(hi.keys()))])))

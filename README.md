@@ -7,6 +7,10 @@ This is an implementation of theory presented in He and Geng's paper [1], trajec
 To run the simulation, run [tracking.py](tracking.py).
 Corresponding trajectories will be stored in [data/](data/).
 
+### Setpoint Tracking (Static Leader, Single Follower)
+![Setpoint Tracking](https://github.com/ericjhkim/nonholonomic-lie/blob/main/visualizations/anim_20250213_214012.gif)
+_A replication of Figure 2 in [1]. The follower tracks the stationary leader. Careful tuning of the gains is required to minimize oscillatory behaviour._
+
 ### Trajectory Tracking (Dynamic Leader, Single Follower)
 ![Trajectory Tracking](https://github.com/ericjhkim/nonholonomic-lie/blob/main/visualizations/anim_20250213_201839.gif)
 _A replication of Figure 1 in [1]. The follower tracks the moving leader._
