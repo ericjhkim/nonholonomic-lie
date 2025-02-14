@@ -8,7 +8,7 @@ To run the simulation, run [tracking.py](tracking.py).
 Corresponding trajectories will be stored in [data/](data/).
 
 ### Trajectory Tracking (Dynamic Leader, Single Follower)
-![Trajectory Tracking](https://github.com/ericjhkim/nonholonomic-lie/tree/main/visualizations/anim_20250213_201839.gif)
+![Trajectory Tracking](https://github.com/ericjhkim/nonholonomic-lie/blob/main/visualizations/anim_20250213_201839.gif)
 _A replication of Figure 1 in [1]. The follower tracks the moving leader._
 
 ## References
