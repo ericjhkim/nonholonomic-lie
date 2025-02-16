@@ -29,6 +29,20 @@ def generate_frames(states, dt):
     size = 0.022*np.linalg.norm([max_x - min_x, max_y - min_y])  # Adjust line length as needed
 
     lims = [[0.0, 0.0], [0.0, 0.0]]
+    for key in states.keys():
+        for l in range(2):
+            min_value = min(states[key][:, l+1])
+            max_value = max(states[key][:, l+1])
+            if min_value < lims[l][0]:
+                lims[l][0] = min_value
+            if max_value > lims[l][1]:
+                lims[l][1] = max_value
+    buffer_x = 0.1 * (lims[0][1] - lims[0][0])
+    buffer_y = 0.1 * (lims[1][1] - lims[1][0])
+    lims[0][0] -= buffer_x
+    lims[0][1] += buffer_x
+    lims[1][0] -= buffer_y
+    lims[1][1] += buffer_y
 
     # Loop through time steps (1 frame per timestep)
     num_timesteps = len(states[[k for k in states.keys()][0]])
@@ -93,15 +107,6 @@ def generate_frames(states, dt):
 
             # Assign handles for the legend
             hi[key] = ax.scatter([], [], c=colours[k], marker='s')
-
-        for l in range(2):
-            min_value = min(states[key][:, l+1])
-            max_value = max(states[key][:, l+1])
-            buffer = max_value*0.2
-            if min_value-buffer < lims[l][0]:
-                lims[l][0] = min_value-buffer
-            if max_value+buffer > lims[l][1]:
-                lims[l][1] = max_value+buffer
 
         ax.set_xlim(lims[0])
         ax.set_ylim(lims[1])

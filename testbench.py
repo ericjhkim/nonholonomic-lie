@@ -51,7 +51,7 @@ import tools as tools
 # # Show plot
 # plt.show()
 
-data = tools.load_latest_h5py(filename="data", dataset_name="data", directory="data")
+# data = tools.load_latest_h5py(filename="data", dataset_name="data", directory="data")
 
 # def compute_xi01(g0, g1, xi0, xi1):
 #     """
@@ -123,3 +123,35 @@ data = tools.load_latest_h5py(filename="data", dataset_name="data", directory="d
 # print(np.arctan2(qy01, qx01))
 # print(np.arctan2(qx01, qy01))
 # print(-np.arctan(qy01/qx01))
+
+# a = np.array([1, 1, 0])
+# leaders = np.nonzero(a)[0].tolist()
+# print(a[0,2])
+
+# print(np.arctan(1/2))
+# print(np.arctan2(1,2))
+# print(np.arctan2(2,1))
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Generate a meshgrid of values for x and y
+x = np.linspace(-10, 10, 100)
+y = np.linspace(-10, 10, 100)
+X, Y = np.meshgrid(x, y)
+
+# Compute the arctan2 of Y and X
+Z = np.arctan2(Y, X)
+
+# Create the plot
+plt.figure(figsize=(8, 6))
+cp = plt.contourf(X, Y, Z, cmap='hsv')  # Contour plot with a hue-based color map
+plt.colorbar(cp, label='Arctan2(Y, X)')
+
+# Labeling the plot
+plt.title('Visualization of numpy.arctan2(Y, X)')
+plt.xlabel('X')
+plt.ylabel('Y')
+
+# Show the plot
+plt.show()

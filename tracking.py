@@ -22,15 +22,15 @@ def main():
     PROBLEM = 0                                         # 0: Setpoint tracking, 1: Trajectory tracking
     SIM_TIME = 20                                       # Simulation time in seconds
     dt = 0.1                                            # Time step
-    SAVE_DATA = True                                    # Save data to file
-    CREATE_GIF = True                                   # Create GIF
+    SAVE_DATA = False                                    # Save data to file
+    CREATE_GIF = False                                   # Create GIF
 
     # Directories
     TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
     gif_path = f"visualizations/anim_{TIMESTAMP}.gif"
 
     #%% Initialization
-    k_p, k_d, k, k_e = 1.0, 4.0, 1.5, 1.0
+    k_p, k_d, k, k_e = 1.0, 4.0, 2.0, 1.0
 
     # Leader's configuration
     g0 = in_SE2([np.deg2rad(0.0), 0, 0])                # Initial pose
@@ -173,7 +173,8 @@ def controller(PROBLEM, g0, g1, g01, xi0, xi1, k_p, k_d, k, k_e, u0):
     omega01, vx01, vy01 = xi01
 
     # Compute the adjoint orientation correction: theta1_tilde = theta0 + theta01
-    theta1_tilde = theta0 + theta01
+    theta01_tilde = np.arctan2(omega0*rx01, vx0 - omega0*ry01)
+    theta1_tilde = theta0 + theta01_tilde
 
     # Compute control inputs using Equation (47)
     u_theta = -k_e * (theta1 - theta1_tilde) - k_p * (theta01 + k * beta01) - k_d * omega01 + u_theta0
