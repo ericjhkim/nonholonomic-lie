@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-def generate_frames(states, dt):
+def generate_frames(states, dt, preview=False):
     """
     Create frames for the GIF animation with heading indicators.
     """
@@ -46,12 +46,18 @@ def generate_frames(states, dt):
 
     # Loop through time steps (1 frame per timestep)
     num_timesteps = len(states[[k for k in states.keys()][0]])
-    for i in tqdm(range(num_timesteps), desc="Generating GIF Frames", unit="frame"):
+    if preview:
+        myrange = range(num_timesteps-1, num_timesteps)
+        dpi = 200
+    else:
+        myrange = range(0,num_timesteps)
+        dpi = 300
+    for i in tqdm(myrange, desc="Generating GIF Frames", unit="frame"):
 
         t = i * dt
 
         # Configure plotting area
-        fig = plt.figure(figsize=(5, 4), dpi=300)
+        fig = plt.figure(figsize=(5, 4), dpi=dpi)
         ax = fig.add_subplot(111)
         ax.set_title(f'Simulation Time: {t:.2f}s')
         ax.set_xlabel('X Position')
@@ -122,8 +128,14 @@ def generate_frames(states, dt):
         plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust layout to make room for the legend
         plt.gca().set_aspect('equal')
 
-        plt.savefig(f'frames/frame_{i:04d}.png')
-        plt.close(fig)  # Close the figure to prevent it from displaying
+        if preview:
+            continue
+        else:
+            plt.savefig(f'frames/frame_{i:04d}.png')
+            plt.close(fig)  # Close the figure to prevent it from displaying
+    
+    if preview:
+        plt.show()
 
 #%% Data Management
 def save_to_h5py(data, gains, filename="sim_data", dataset_name="data"):

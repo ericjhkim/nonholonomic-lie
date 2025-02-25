@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import tools as tools
+from scipy.linalg import expm, logm
 
 # g0 = in_SE2([np.pi/6, 5, 3])
 # print(g0)
@@ -132,26 +133,70 @@ import tools as tools
 # print(np.arctan2(1,2))
 # print(np.arctan2(2,1))
 
-import numpy as np
-import matplotlib.pyplot as plt
+# import numpy as np
+# import matplotlib.pyplot as plt
 
-# Generate a meshgrid of values for x and y
-x = np.linspace(-10, 10, 100)
-y = np.linspace(-10, 10, 100)
-X, Y = np.meshgrid(x, y)
+# # Generate a meshgrid of values for x and y
+# x = np.linspace(-10, 10, 100)
+# y = np.linspace(-10, 10, 100)
+# X, Y = np.meshgrid(x, y)
 
-# Compute the arctan2 of Y and X
-Z = np.arctan2(Y, X)
+# # Compute the arctan2 of Y and X
+# Z = np.arctan2(Y, X)
 
-# Create the plot
-plt.figure(figsize=(8, 6))
-cp = plt.contourf(X, Y, Z, cmap='hsv')  # Contour plot with a hue-based color map
-plt.colorbar(cp, label='Arctan2(Y, X)')
+# # Create the plot
+# plt.figure(figsize=(8, 6))
+# cp = plt.contourf(X, Y, Z, cmap='hsv')  # Contour plot with a hue-based color map
+# plt.colorbar(cp, label='Arctan2(Y, X)')
 
-# Labeling the plot
-plt.title('Visualization of numpy.arctan2(Y, X)')
-plt.xlabel('X')
-plt.ylabel('Y')
+# # Labeling the plot
+# plt.title('Visualization of numpy.arctan2(Y, X)')
+# plt.xlabel('X')
+# plt.ylabel('Y')
 
-# Show the plot
-plt.show()
+# # Show the plot
+# plt.show()
+
+# A = [[1,4],[1,1]]
+# print(expm(A))
+
+def vee_map_of_rotation(R):
+    """
+    Computes the vee map (logarithm) of a rotation matrix R to obtain the corresponding rotation vector.
+
+    Parameters:
+    R (numpy.ndarray): A 3x3 rotation matrix.
+
+    Returns:
+    numpy.ndarray: A 3x1 rotation vector (axis-angle representation).
+    """
+    # Ensure R is a valid rotation matrix
+    assert R.shape == (3, 3), "R must be a 3x3 matrix"
+    
+    # Compute the rotation angle theta
+    theta = np.arccos((np.trace(R) - 1) / 2)
+
+    # Handle the case where theta is very small (approximately zero)
+    if np.isclose(theta, 0.0):
+        return np.zeros(3)  # No rotation
+
+    # Compute the skew-symmetric matrix of the rotation axis
+    hat_k = (R - R.T) / (2 * np.sin(theta))
+
+    # Extract the rotation vector using the vee map
+    rotation_vector = theta * np.array([hat_k[2, 1], hat_k[0, 2], hat_k[1, 0]])
+
+    return rotation_vector
+
+def hat_map(v):
+    """Compute the hat map of a vector."""
+    return np.array([[0, -v[2], v[1]],
+                        [v[2], 0, -v[0]],
+                        [-v[1], v[0], 0]])
+
+theta = np.pi/6
+R = np.array([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
+print(R)
+rv = vee_map_of_rotation(R)
+print(rv)
+print(hat_map(rv))

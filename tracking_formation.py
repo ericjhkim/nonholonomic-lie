@@ -19,7 +19,6 @@ from PIL import Image
 
 def main():
     #%% Simulation parameters
-    PROBLEM = 0                                         # 0: Setpoint tracking, 1: Trajectory tracking
     SIM_TIME = 15                                       # Simulation time in seconds
     dt = 0.1                                            # Time step
     SAVE_DATA = True                                    # Save data to file
@@ -93,7 +92,7 @@ def main():
             xi_a = adj_0i(gc_bar, xi_c)                 # Desired velocity. This is unused due to instability. The convex combination of leaders' velocities is used instead (xi_c).
 
             # Compute control (follower)
-            ui = controller(PROBLEM, g_a, gf[i], g_a_i, xi_c, xif[i], k_p, k_d, k, k_e, u0)
+            ui = controller(g_a, gf[i], g_a_i, xi_c, xif[i], k_p, k_d, k, k_e, u0)
     
             # Update system (follower)
             gf[i], xif[i] = update_system(gf[i], xif[i], ui, dt)
@@ -129,14 +128,7 @@ def main():
     if SAVE_DATA:
         tools.save_to_h5py(states, gains, filename=f"data/data_{TIMESTAMP}", dataset_name="simulation")
 
-    plt.plot(states["0"][:,1], states["0"][:,2], 'b-', label='Leader', alpha=0.8)
-    plt.plot(states["1"][:,1], states["1"][:,2], 'r-', label='Follower 1', alpha=0.8)
-    plt.plot(states["2"][:,1], states["2"][:,2], 'g-', label='Follower 2', alpha=0.8)
-    plt.plot(states["3"][:,1], states["3"][:,2], 'k-', label='Follower 3', alpha=0.8)
-    plt.grid()
-    plt.legend()
-    plt.gca().set_aspect('equal')
-    plt.show()
+    tools.generate_frames(states, dt, preview=True)
 
 #%% Functions
 def get_gc_bar(xi_c, p_c_i):
@@ -209,12 +201,11 @@ def update_system(gi, xi_i, ui, dt):
     return gi_next, xi_i_next
 
 # Trajectory tracking controller
-def controller(PROBLEM, g0, g1, g01, xi0, xi1, k_p, k_d, k, k_e, u0):
+def controller(g0, g1, g01, xi0, xi1, k_p, k_d, k, k_e, u0):
     """
     Computes the follower control input for trajectory tracking.
 
     Parameters:
-    - PROBLEM: Simulation type (0: Setpoint tracking, 1: Trajectory tracking).
     - g0: Leader's configuration matrix (SE(2)).
     - g1: Follower's configuration matrix (SE(2)).
     - g01: Relative configuration matrix (SE(2)).

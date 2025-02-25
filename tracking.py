@@ -19,7 +19,6 @@ from PIL import Image
 
 def main():
     #%% Simulation parameters
-    PROBLEM = 0                                         # 0: Setpoint tracking, 1: Trajectory tracking
     SIM_TIME = 20                                       # Simulation time in seconds
     dt = 0.1                                            # Time step
     SAVE_DATA = False                                    # Save data to file
@@ -59,7 +58,7 @@ def main():
         g01 = np.linalg.inv(g0) @ g1
 
         # Compute control (follower)
-        ui = controller(PROBLEM, g0, g1, g01, xi0, xi1, k_p, k_d, k, k_e, u0)
+        ui = controller(g0, g1, g01, xi0, xi1, k_p, k_d, k, k_e, u0)
 
         # Update system (follower)
         g1, xi1 = update_system(g1, xi1, ui, dt)
@@ -99,11 +98,7 @@ def main():
     if SAVE_DATA:
         tools.save_to_h5py(states, gains, filename=f"data/data_{TIMESTAMP}", dataset_name="simulation")
 
-    plt.plot(states["0"][:,1], states["0"][:,2], 'b-', label='Leader', alpha=0.2)
-    plt.plot(states["1"][:,1], states["1"][:,2], 'r-', label='Follower', alpha=0.2)
-    plt.grid()
-    plt.gca().set_aspect('equal')
-    plt.show()
+    tools.generate_frames(states, dt, preview=True)
 
 #%% Functions
 def update_system(gi, xi_i, ui, dt):
@@ -126,12 +121,11 @@ def update_system(gi, xi_i, ui, dt):
     return gi_next, xi_i_next
 
 # Trajectory tracking controller
-def controller(PROBLEM, g0, g1, g01, xi0, xi1, k_p, k_d, k, k_e, u0):
+def controller(g0, g1, g01, xi0, xi1, k_p, k_d, k, k_e, u0):
     """
     Computes the follower control input for trajectory tracking.
 
     Parameters:
-    - PROBLEM: Simulation type (0: Setpoint tracking, 1: Trajectory tracking).
     - g0: Leader's configuration matrix (SE(2)).
     - g1: Follower's configuration matrix (SE(2)).
     - g01: Relative configuration matrix (SE(2)).
