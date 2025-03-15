@@ -23,5 +23,9 @@ _A replication of Figure 11 in [1]. Achieving smooth trajectories requires tunin
 ![Trajectory Tracking](https://github.com/ericjhkim/nonholonomic-lie/blob/main/visualizations/anim_20250216_130831.gif)
 _A replication of Figure 13 in [1]. The followers track the leader according to the desired positional offsets._
 
+### 3D Formation Tracking (Dynamic Leader, Three Followers, Positional Offsets)
+![3D Trajectory Tracking](https://github.com/ericjhkim/nonholonomic-lie/blob/main/visualizations/anim_20250315_163855.gif)
+_Extension of formation tracking to SE(3)._
+
 ## References
   1. He X, Geng Z. Trajectory tracking of nonholonomic mobile robots by geometric control on special Euclidean group. Int J Robust Nonlinear Control. 2021; 31: 5680–5707. [https://doi.org/10.1002/rnc.5561](https://doi.org/10.1002/rnc.5561)

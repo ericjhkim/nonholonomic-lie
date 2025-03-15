@@ -18,42 +18,35 @@ def generate_frames(states, dt, preview=False):
     """
     Create frames for the GIF animation with heading indicators in 3D.
     """
-    def create_cross_with_circles_3d(x, y, z, theta_x, theta_y, theta_z, arm_length=1.0, circle_radius=0.2, num_points=100):
-        """Generate 3D cross with circles oriented based on the theta angles."""
-        # Create cross points in the XY plane
-        cross_base = np.array([[arm_length, 0, 0], [-arm_length, 0, 0], [0, arm_length, 0], [0, -arm_length, 0]])
+    def create_prism_points_3d(x, y, z, vx, vy, vz, scale=1.0):
+        """Generate 3D triangular prism points oriented based on the velocity vector."""
+        # Create triangle shape in the XY plane with the nose pointing in the +x direction
+        triangle_base = np.array([[scale, 0, 0], [-scale * 0.5, scale * 0.5, 0], [-scale * 0.5, -scale * 0.5, 0]])
 
-        # Apply additional +45 degrees rotation to the cross base
-        theta_z += np.pi/4
+        # Normalize the velocity vector
+        velocity_vector = np.array([vx, vy, vz])
+        norm = np.linalg.norm(velocity_vector)
+        if norm == 0:
+            return triangle_base + np.array([x, y, z])  # Return the base shape if velocity is zero
 
-        # Create rotation matrices for each axis
-        R_x = np.array([[1, 0, 0],
-                        [0, np.cos(theta_x), -np.sin(theta_x)],
-                        [0, np.sin(theta_x), np.cos(theta_x)]])
-        
-        R_y = np.array([[np.cos(theta_y), 0, np.sin(theta_y)],
-                        [0, 1, 0],
-                        [-np.sin(theta_y), 0, np.cos(theta_y)]])
-        
-        R_z = np.array([[np.cos(theta_z), -np.sin(theta_z), 0],
-                        [np.sin(theta_z), np.cos(theta_z), 0],
-                        [0, 0, 1]])
+        velocity_vector /= norm
 
-        # Combine the rotation matrices
-        rotation_matrix = R_z @ R_y @ R_x
+        # Create rotation matrix to align the x-axis with the velocity vector
+        x_axis = np.array([1, 0, 0])
+        v = np.cross(x_axis, velocity_vector)
+        s = np.linalg.norm(v)
+        c = np.dot(x_axis, velocity_vector)
 
-        # Rotate the cross base
-        rotated_cross = (rotation_matrix @ cross_base.T).T
+        if s != 0:
+            vx_matrix = np.array([[0, -v[2], v[1]],
+                                  [v[2], 0, -v[0]],
+                                  [-v[1], v[0], 0]])
+            rotation_matrix = np.eye(3) + vx_matrix + (vx_matrix @ vx_matrix) * ((1 - c) / (s ** 2))
+            rotated_triangle = (rotation_matrix @ triangle_base.T).T
+        else:
+            rotated_triangle = triangle_base
 
-        # Create circles at the ends of the cross
-        angles = np.linspace(0, 2 * np.pi, num_points)
-        circle_base = np.array([[circle_radius * np.cos(angle), circle_radius * np.sin(angle), 0] for angle in angles])
-        circles = []
-        for point in rotated_cross:
-            rotated_circle = (rotation_matrix @ circle_base.T).T + point
-            circles.append(rotated_circle + np.array([x, y, z]))
-
-        return rotated_cross + np.array([x, y, z]), circles
+        return rotated_triangle + np.array([x, y, z])
     
     # Turn off interactive mode
     plt.ioff()
@@ -61,9 +54,7 @@ def generate_frames(states, dt, preview=False):
     min_x, max_x = np.min([states[k][:, 3] for k in states.keys()]), np.max([states[k][:, 3] for k in states.keys()])
     min_y, max_y = np.min([states[k][:, 4] for k in states.keys()]), np.max([states[k][:, 4] for k in states.keys()])
     min_z, max_z = np.min([states[k][:, 5] for k in states.keys()]), np.max([states[k][:, 5] for k in states.keys()])
-    radius = 0.022 * np.linalg.norm([max_x - min_x, max_y - min_y, max_z - min_z])  # Adjust circle radius as needed
-    arm_length = 0.022 * np.linalg.norm([max_x - min_x, max_y - min_y, max_z - min_z])  # Adjust arm length as needed
-    circle_radius = arm_length * 0.2  # Adjust circle radius as needed
+    size = 0.022 * np.linalg.norm([max_x - min_x, max_y - min_y, max_z - min_z])  # Adjust prism size as needed
 
     lims = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
     for key in states.keys():
@@ -100,9 +91,9 @@ def generate_frames(states, dt, preview=False):
         fig = plt.figure(figsize=(8, 6), dpi=dpi)
         ax = fig.add_subplot(111, projection='3d')
         ax.set_title(f'Simulation Time: {t:.2f}s')
-        ax.set_xlabel('X Position')
-        ax.set_ylabel('Y Position')
-        ax.set_zlabel('Z Position')
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
 
         # Colours
         colours = ["b", "r", "g", "c", "m", "k"]
@@ -115,25 +106,20 @@ def generate_frames(states, dt, preview=False):
             py = states[key][i, 4]
             pz = states[key][i, 5]
 
-            # Extract theta angles from state vector
-            theta_x = states[key][i, 0]
-            theta_y = states[key][i, 1]
-            theta_z = states[key][i, 2]
+            # Calculate velocity from position data
+            if i == 0:
+                vx, vy, vz = 0, 0, 0
+            else:
+                vx = (states[key][i, 3] - states[key][i - 1, 3]) / dt
+                vy = (states[key][i, 4] - states[key][i - 1, 4]) / dt
+                vz = (states[key][i, 5] - states[key][i - 1, 5]) / dt
 
-            # Create cross with circles
-            cross_points, circles = create_cross_with_circles_3d(px, py, pz, theta_x, theta_y, theta_z, arm_length=arm_length, circle_radius=circle_radius)
+            # Create prism points
+            prism_points = create_prism_points_3d(px, py, pz, vx, vy, vz, scale=size)
 
-            # Draw the cross
-            ax.plot([cross_points[0, 0], cross_points[1, 0]], [cross_points[0, 1], cross_points[1, 1]], [cross_points[0, 2], cross_points[1, 2]], color=colours[k], linewidth=2)
-            ax.plot([cross_points[2, 0], cross_points[3, 0]], [cross_points[2, 1], cross_points[3, 1]], [cross_points[2, 2], cross_points[3, 2]], color=colours[k], linewidth=2)
-
-            # Draw the circles
-            for circle in circles:
-                poly = art3d.Poly3DCollection([circle], color=colours[k])
-                ax.add_collection3d(poly)
-
-            # Highlight one arm to indicate heading
-            ax.plot([cross_points[0, 0], cross_points[1, 0]], [cross_points[0, 1], cross_points[1, 1]], [cross_points[0, 2], cross_points[1, 2]], color='k', linewidth=2)
+            # Draw the prism
+            poly = art3d.Poly3DCollection([prism_points], color=colours[k], alpha=0.8)
+            ax.add_collection3d(poly)
 
             # Draw trajectory
             for j in range(i + 1):
@@ -171,7 +157,6 @@ def generate_frames(states, dt, preview=False):
 
         plt.figlegend(handles, labels, loc="upper left", ncol=1, fontsize=8)
         plt.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust layout to make room for the legend
-        plt.gca().set_aspect('equal')
 
         if preview:
             continue

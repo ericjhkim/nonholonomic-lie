@@ -6,34 +6,37 @@ from scipy.linalg import expm
 SIM_TIME = 10
 dt = 0.01
 
-def get_x_d(t):
-    # return np.zeros(3)
-    return np.array([0.4*t, 0.4*np.sin(np.pi*t), 0.6*np.cos(np.pi*t)])
+# def get_x_d(t):
+#     # return np.zeros(3)
+#     return np.array([0.4*t, 0.4*np.sin(np.pi*t), 0.6*np.cos(np.pi*t)])
 
-def get_b1_d(t):
-    # return np.array([1,0,0])
-    return np.array([np.cos(np.pi*t), np.sin(np.pi*t), 0])
+# def get_b1_d(t):
+#     # return np.array([1,0,0])
+#     return np.array([np.cos(np.pi*t), np.sin(np.pi*t), 0])
+
+def get_desired(t):
+    x_d = np.array([0.4 * t, 0.4 * np.sin(np.pi * t), 0.6 * np.cos(np.pi * t)])
+    v_d = np.array([0.4, 0.4 * np.pi * np.cos(np.pi * t), -0.6 * np.pi * np.sin(np.pi * t)])
+    a_d = np.array([0, -0.4 * np.pi**2 * np.sin(np.pi * t), -0.6 * np.pi**2 * np.cos(np.pi * t)])
+    b1d = np.array([np.cos(np.pi * t), np.sin(np.pi * t), 0])
+    return x_d, v_d, a_d, b1d
 
 def main():
     # Run the simulation
     quad = Quadrotor()
-    x_d = np.array([1, 1, -5])                  # Desired position
-    v_d = np.zeros(3)                           # Desired velocity
-    a_d = np.zeros(3)                           # Desired acceleration
-    R_d = np.eye(3)                             # Desired rotation matrix
-    omega_d = np.zeros(3)                       # Desired angular velocity
-    omega_dot_d = np.zeros(3)                   # Desired angular acceleration
+    # x_d = np.array([1, 1, -5])                  # Desired position
+    # v_d = np.zeros(3)                           # Desired velocity
+    # a_d = np.zeros(3)                           # Desired acceleration
+    # R_d = np.eye(3)                             # Desired rotation matrix
+    # omega_d = np.zeros(3)                       # Desired angular velocity
+    # omega_dot_d = np.zeros(3)                   # Desired angular acceleration
 
     positions = []
     for t in np.arange(0, SIM_TIME, dt):
 
-        x_d = get_x_d(t)
+        x_d, v_d, a_d, b1d = get_desired(t)
 
-        f, M = quad.compute_thrust_and_moments(
-            t,
-            x_d=x_d, v_d=v_d, a_d=a_d,
-            R_d=R_d, omega_d=omega_d, omega_dot_d=omega_dot_d
-        )
+        f, M = quad.compute_thrust_and_moments(t, x_d=x_d, v_d=v_d, a_d=a_d, b1d=b1d)
 
         quad.update_state(f, M, dt)
 
@@ -104,23 +107,39 @@ class Quadrotor:
                          [v[2], 0, -v[0]],
                          [-v[1], v[0], 0]])
     
-    def compute_thrust_and_moments(self, t, x_d, v_d, a_d, R_d, omega_d, omega_dot_d, kx=16, kv=5.6, kR=8.81, kOmega=2.54):
+    def compute_omega_d(self, R_d, dR_d):
+        """Compute desired angular velocity."""
+        return self.vee_map(R_d.T @ dR_d)
+
+    def compute_omega_dot_d(self, R_d, dR_d, ddR_d):
+        """Compute desired angular acceleration."""
+        return self.vee_map(R_d.T @ ddR_d - self.hat_map(self.compute_omega_d(R_d, dR_d)) @ R_d.T @ dR_d)
+    
+    def compute_thrust_and_moments(self, t, x_d, v_d, a_d, b1d, kx=16, kv=5.6, kR=8.81, kOmega=2.54):
         """Compute the thrust and moments for tracking control."""
         # Position and velocity errors
         e_x = self.x - x_d
         e_v = self.v - v_d 
 
         # Calculate desired body frame axes
-        desired_acc = -kx*e_x - kv*e_v + self.m*self.g*np.array([0,0,1]) + self.m*a_d
-        b3d = -desired_acc/np.linalg.norm(desired_acc)
+        F_d = -kx*e_x - kv*e_v - self.m*self.g*np.array([0,0,1]) + self.m*a_d       # desired force
+        b3d = -F_d/np.linalg.norm(F_d)
 
-        b1d = get_b1_d(t)
         b2d = np.cross(b3d, b1d)/np.linalg.norm(np.cross(b3d, b1d))
 
         # Force
         f = -(-kx*e_x - kv*e_v - self.m*self.g*np.array([0,0,1]) + self.m*a_d) @ self.R @ np.array([0,0,1])
 
         R_d = np.column_stack([b1d, b2d, b3d])
+
+        # Compute derivatives numerically for R_d
+        dt = 1e-5
+        R_d_next = np.column_stack([b1d, b2d, b3d])  # Approximate for next step (should be derived from desired trajectory)
+        dR_d = (R_d_next - R_d) / dt
+        ddR_d = (dR_d - (R_d - R_d_next) / dt) / dt
+        
+        omega_d = self.compute_omega_d(R_d, dR_d)
+        omega_dot_d = self.compute_omega_dot_d(R_d, dR_d, ddR_d)
 
         e_R = 0.5 * self.vee_map(R_d.T @ self.R - self.R.T @ R_d)
         e_omega = self.omega - self.R.T @ R_d @ omega_d

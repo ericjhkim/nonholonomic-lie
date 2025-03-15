@@ -27,7 +27,7 @@ def main():
     g0 = in_SE3([0.0, 0.0, 0.0, 0, 0, 0])                # Initial pose
     xi0 = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])       # Initial velocity
     def u_leader(t):
-        return np.array([np.deg2rad(1.0), 0, np.deg2rad(2.0), 2, 1, 0.5]) if t < 10 else np.array([0, 0, 0, 0, 0, 0])
+        return np.array([np.deg2rad(1.0), 0, np.deg2rad(2.0), 2, 1, 9.8+0.5]) if t < 10 else np.array([0, 0, 0, 0, 0, 9.8])
     
     # Followers' initial configurations
     gf = [in_SE3([np.deg2rad(-10.0), np.deg2rad(0.0), np.deg2rad(90.0), -40, 40, 40]),
@@ -204,7 +204,7 @@ def controller(g01, xi0, xi1, k_p, k_d, k_e, u0):
     u_y = -k_p*q_y01 - k_d*v_y01 + u_v_y0
     u_z = -k_p*q_z01 - k_d*v_z01 + u_v_z0
 
-    return np.array([u_theta_x, u_theta_y, u_theta_z, u_x, u_y, u_z])
+    return np.array([u_theta_x, u_theta_y, u_theta_z, u_x, u_y, u_z+9.8])
 
 # Update the update_system function to handle SE(3)
 def update_system(gi, xi_i, ui, dt):
@@ -220,6 +220,7 @@ def update_system(gi, xi_i, ui, dt):
     Returns:
     - Updated configuration and velocity.
     """
+    ui[5] -= 9.8
     xi_i_hat = hat_map_SE3(xi_i)                    # Algebra element
     gi_next = gi @ exp_map_SE3(xi_i_hat * dt)       # Update gi using matrix exponential
     xi_i_next = xi_i + ui * dt                      # Update xi_i using control input
